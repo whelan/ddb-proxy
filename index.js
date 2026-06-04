@@ -30,7 +30,7 @@ app.post(authPath, cors(), express.json(), (req, res) => {
 
   authentication.getBearerToken(cacheId, req.body.cobalt).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
-    return res.status(200).json({ success: true, message: "Authenticated." });
+    return res.status(200).json({ success: true, message: "Authenticated.", token: token });
   });
 });
 
