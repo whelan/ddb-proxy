@@ -13,9 +13,17 @@ const character = require("./character.js");
 const items = require("./items.js");
 const monsters = require("./monsters.js");
 const campaign = require("./campaign.js");
+const inventory = require("./inventory.js");
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Chrome's Private Network Access: an https page (The Forge) may call a proxy on
+// localhost only if the preflight says so.
+app.use((req, res, next) => {
+  if (req.headers["access-control-request-private-network"]) res.setHeader("Access-Control-Allow-Private-Network", "true");
+  next();
+});
 
 /**
  * A simple ping to tell if the proxy is running
@@ -350,6 +358,56 @@ app.post("/proxy/campaigns", cors(), express.json(), (req, res) => {
         return res.json({ success: false, message: "Unknown error during campaign get: " + error });
       });
   });
+});
+
+/**
+ * Inventory sync (used by the ddb-inventory-sync Foundry module).
+ * body: { cobalt, characterId, op, payload }
+ * op "read" returns the character's inventory, currency and campaign id;
+ * every other op is one whitelisted write (see inventory.js OPERATIONS).
+ */
+app.options("/proxy/inventory", cors(), (req, res) => res.status(200).send());
+app.post("/proxy/inventory", cors(), express.json(), (req, res) => {
+  const { cobalt, op, payload } = req.body || {};
+  if (!cobalt || cobalt == "") return res.json({ success: false, message: "No cobalt token" });
+  const characterId = parseInt(req.body.characterId);
+  if (!Number.isInteger(characterId) || characterId <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid characterId" });
+  }
+  if (op !== "read" && !inventory.OPERATIONS[op]) {
+    return res.status(400).json({ success: false, message: `Unknown inventory operation "${op}"` });
+  }
+
+  const cacheId = authentication.getCacheId(cobalt);
+  const run = (token) =>
+    op === "read"
+      ? inventory.readInventory(token, characterId)
+      : inventory.runInventoryOperation(token, characterId, op, payload);
+
+  authentication
+    .getBearerToken(cacheId, cobalt)
+    .then(async (token) => {
+      if (!token) return res.status(401).json({ success: false, message: "You must supply a valid cobalt value." });
+      let result = await run(token);
+      if (result.status === 401) {
+        // The cached bearer token expired before the cache did: fetch a fresh one once.
+        authentication.CACHE_AUTH.remove(cacheId);
+        const fresh = await authentication.getBearerToken(cacheId, cobalt);
+        if (!fresh) return res.status(401).json({ success: false, message: "D&D Beyond refused the cobalt cookie." });
+        result = await run(fresh);
+      }
+      const { status, json } = result;
+      const ok = status >= 200 && status < 300 && json.success !== false;
+      if (!ok) console.log(`Inventory ${op} for ${characterId} failed: ${status} ${json.message || ""}`);
+      return res.status(ok ? 200 : 502).json({ ...json, success: ok, ddbStatus: status });
+    })
+    .catch((error) => {
+      console.log(error);
+      const invalid = error instanceof Error && /^(Invalid|Missing|Unknown|"equipment")/.test(error.message);
+      return res
+        .status(invalid ? 400 : 500)
+        .json({ success: false, message: `Inventory ${op} failed: ${error.message || error}` });
+    });
 });
 
 app.listen(port, () => {

@@ -17,25 +17,38 @@ function getBearerToken(id, cobalt) {
   return new Promise((resolve) => {
     if (cobalt && cobalt !== "" && !isJSON(`{ "cobalt": "${cobalt}" }`)) {
       console.log(`Invalid token for ${id}`);
-      return null;
+      resolve(null);
     } else if (cobalt && cobalt !== "") {
+      const cached = CACHE_AUTH.exists(id);
+      if (cached && cached.data) {
+        resolve(cached.data);
+        return;
+      }
       fetch(CONFIG.urls.authService, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Cookie: `CobaltSession=${cobalt}`,
         },
+        timeout: 15000,
       })
         .then((response) => response.json())
         .then((data) => {
-          if (!data.token || !data.token.length) resolve(null);
+          if (!data || !data.token || !data.token.length) {
+            resolve(null);
+            return;
+          }
           CACHE_AUTH.add(id, data.token);
           resolve(data.token);
+        })
+        .catch((error) => {
+          // A network error or a non-JSON answer must not leave the request hanging.
+          console.log(`Auth service error for ${id}: ${error.message || error}`);
+          resolve(null);
         });
     } else {
       console.log("NO COBALT TOKEN");
       resolve(null);
-      //reject('No cobaltID token!');
     }
   });
 }

@@ -16,6 +16,10 @@ class Cache {
     return (new Date().valueOf() - timestamp) / (1000 * 60 * 60 * this.expiration) >= 1;
   }
 
+  remove(id) {
+    this.items = this.items.filter((cache) => cache.id !== id);
+  }
+
   add(id, data) {
     const isArray = Array.isArray(data);
     const isString = typeof data === "string" || data instanceof String;
