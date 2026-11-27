@@ -69,3 +69,27 @@ It does not include and features in development.
 ## Support
 
 No support is provided for this software.
+
+## Inventory sync (`/proxy/inventory`)
+
+Used by the `ddb-inventory-sync` Foundry module to write loot and merchant trades back to
+D&D Beyond. D&D Beyond's API only answers CORS for `www.dndbeyond.com`, so a Foundry module
+cannot call it directly; this route is the bridge.
+
+`POST /proxy/inventory` with `{ cobalt, characterId, op, payload }`:
+
+| op | D&D Beyond call | payload |
+|---|---|---|
+| `read` | `GET character/{id}` (trimmed to inventory, currencies, campaignId) | — |
+| `add` | `POST inventory/item` | `{ equipment: [{ entityId, entityTypeId, quantity, containerEntityId?, containerEntityTypeId? }] }` |
+| `remove` | `DELETE inventory/item` | `{ id, removeContainerContents? }` |
+| `quantity` | `PUT inventory/item/quantity` | `{ id, quantity }` |
+| `move` | `PUT inventory/item/move` | `{ id, containerEntityId, containerEntityTypeId }` |
+| `equipped` / `attuned` | `PUT inventory/item/equipped` / `attuned` | `{ id, value }` |
+| `currency` | `PUT inventory/currency` | `{ cp, sp, ep, gp, pp, destinationEntityId, destinationEntityTypeId }` |
+| `customItem` | `POST custom/item` | `{ name, quantity, description?, notes?, cost?, weight?, containerEntityId?, containerEntityTypeId? }` |
+
+Container entity type ids: character `1581111423`, item (a bag) `1439493548`, campaign party
+inventory `618115330` (with the campaign id as `containerEntityId`). Only these operations and
+fields are forwarded — anything else is rejected with 400. The endpoints are the ones D&D
+Beyond's own character sheet uses; they are unofficial and can change without notice.
