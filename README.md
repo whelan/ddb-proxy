@@ -91,5 +91,5 @@ cannot call it directly; this route is the bridge.
 
 Container entity type ids: character `1581111423`, item (a bag) `1439493548`, campaign party
 inventory `618115330` (with the campaign id as `containerEntityId`). Only these operations and
-fields are forwarded. Writes that create rows answer with the new rows in `data.addItems` — anything else is rejected with 400. The endpoints are the ones D&D
+fields are forwarded; anything else is rejected with 400. Writes that create rows answer with the new rows in `data.addItems`. The endpoints are the ones D&D
 Beyond's own character sheet uses; they are unofficial and can change without notice.
