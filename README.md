@@ -87,9 +87,9 @@ cannot call it directly; this route is the bridge.
 | `move` | `PUT inventory/item/move` | `{ id, containerEntityId, containerEntityTypeId }` |
 | `equipped` / `attuned` | `PUT inventory/item/equipped` / `attuned` | `{ id, value }` |
 | `currency` | `PUT inventory/currency` | `{ cp, sp, ep, gp, pp, destinationEntityId, destinationEntityTypeId }` |
-| `customItem` | `POST custom/item` | `{ name, quantity, description?, notes?, cost?, weight?, containerEntityId?, containerEntityTypeId? }` |
+| `customItem` | `POST v5.1/custom/item` | `{ name, quantity, description?, notes?, cost?, weight?, containerEntityId?, containerEntityTypeId?, partyId? }` |
 
 Container entity type ids: character `1581111423`, item (a bag) `1439493548`, campaign party
 inventory `618115330` (with the campaign id as `containerEntityId`). Only these operations and
-fields are forwarded — anything else is rejected with 400. The endpoints are the ones D&D
+fields are forwarded. Writes that create rows answer with the new rows in `data.addItems` — anything else is rejected with 400. The endpoints are the ones D&D
 Beyond's own character sheet uses; they are unofficial and can change without notice.

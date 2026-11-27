@@ -117,8 +117,10 @@ const OPERATIONS = {
       ),
   },
   customItem: {
+    // D&D Beyond's sheet creates custom items on v5.1; the new row comes back in data.addItems
     method: "POST",
     path: "custom/item",
+    version: "v5.1",
     body: (p) =>
       pick(
         p,
@@ -131,6 +133,7 @@ const OPERATIONS = {
           weight: (v) => (v === null ? null : num(v)),
           containerEntityId: intOrNull,
           containerEntityTypeId: intOrNull,
+          partyId: intOrNull,
         },
         ["name", "quantity"]
       ),
@@ -146,7 +149,10 @@ async function runInventoryOperation(token, characterId, op, payload) {
   if (!operation) throw new Error(`Unknown inventory operation "${op}"`);
   const body = { characterId, ...operation.body(payload || {}) };
 
-  const response = await fetch(`${CONFIG.urls.baseUrl}/${operation.path}`, {
+  const base = operation.version
+    ? CONFIG.urls.baseUrl.replace(/\/v5$/, `/${operation.version}`)
+    : CONFIG.urls.baseUrl;
+  const response = await fetch(`${base}/${operation.path}`, {
     method: operation.method,
     headers: {
       "Content-Type": "application/json",
