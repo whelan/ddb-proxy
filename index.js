@@ -372,19 +372,27 @@ app.post("/proxy/inventory", cors(), express.json(), (req, res) => {
   }
 
   const cacheId = authentication.getCacheId(cobalt);
+  const run = (token) =>
+    op === "read"
+      ? inventory.readInventory(token, characterId)
+      : inventory.runInventoryOperation(token, characterId, op, payload);
+
   authentication
     .getBearerToken(cacheId, cobalt)
-    .then((token) => {
-      if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
-      const run =
-        op === "read"
-          ? inventory.readInventory(token, characterId)
-          : inventory.runInventoryOperation(token, characterId, op, payload);
-      return run.then(({ status, json }) => {
-        const ok = status >= 200 && status < 300 && json.success !== false;
-        if (!ok) console.log(`Inventory ${op} for ${characterId} failed: ${status} ${json.message || ""}`);
-        return res.status(ok ? 200 : 502).json({ ...json, success: ok, ddbStatus: status });
-      });
+    .then(async (token) => {
+      if (!token) return res.status(401).json({ success: false, message: "You must supply a valid cobalt value." });
+      let result = await run(token);
+      if (result.status === 401) {
+        // The cached bearer token expired before the cache did: fetch a fresh one once.
+        authentication.CACHE_AUTH.remove(cacheId);
+        const fresh = await authentication.getBearerToken(cacheId, cobalt);
+        if (!fresh) return res.status(401).json({ success: false, message: "D&D Beyond refused the cobalt cookie." });
+        result = await run(fresh);
+      }
+      const { status, json } = result;
+      const ok = status >= 200 && status < 300 && json.success !== false;
+      if (!ok) console.log(`Inventory ${op} for ${characterId} failed: ${status} ${json.message || ""}`);
+      return res.status(ok ? 200 : 502).json({ ...json, success: ok, ddbStatus: status });
     })
     .catch((error) => {
       console.log(error);

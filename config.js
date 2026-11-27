@@ -28,8 +28,9 @@ const CONFIG = {
   badImages: BAD_IMAGES,
   classMap: CLASS_MAP,
   urls: {
-    authService: "https://auth-service.dndbeyond.com/v1/cobalt-token",
-    baseUrl: "https://character-service.dndbeyond.com/character/v5",
+    // Overridable so tests can point the proxy at a mock D&D Beyond (test/mock-ddb.js).
+    authService: process.env.DDB_AUTH_URL || "https://auth-service.dndbeyond.com/v1/cobalt-token",
+    baseUrl: process.env.DDB_CHARACTER_BASE_URL || "https://character-service.dndbeyond.com/character/v5",
     monsterBaseUrl: "https://monster-service.dndbeyond.com/v1/Monster",
     characterUrl: (characterId) =>
       `${CONFIG.urls.baseUrl}/character/${characterId}?includeCustomItems=true`,

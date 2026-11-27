@@ -159,6 +159,7 @@ async function runInventoryOperation(token, characterId, op, payload) {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(body),
+    timeout: 15000,
   });
 
   const text = await response.text();
@@ -178,6 +179,7 @@ async function runInventoryOperation(token, characterId, op, payload) {
 async function readInventory(token, characterId) {
   const response = await fetch(CONFIG.urls.characterUrl(characterId), {
     headers: { Authorization: `Bearer ${token}` },
+    timeout: 15000,
   });
   const json = await response.json().catch(() => ({}));
   if (!response.ok || !json.success || !json.data) {

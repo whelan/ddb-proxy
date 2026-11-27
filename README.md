@@ -93,3 +93,16 @@ Container entity type ids: character `1581111423`, item (a bag) `1439493548`, ca
 inventory `618115330` (with the campaign id as `containerEntityId`). Only these operations and
 fields are forwarded; anything else is rejected with 400. Writes that create rows answer with the new rows in `data.addItems`. The endpoints are the ones D&D
 Beyond's own character sheet uses; they are unofficial and can change without notice.
+
+### Testing the inventory route
+
+```
+npm test           # proxy process -> mock D&D Beyond over HTTP (test/inventory.e2e.test.js)
+npm run mock:ddb   # mock D&D Beyond on :3998 (cobalt GOOD-COBALT) to run the proxy against by hand:
+DDB_AUTH_URL=http://localhost:3998/v1/cobalt-token \
+DDB_CHARACTER_BASE_URL=http://localhost:3998/character/v5 node index.js
+```
+
+`DDB_AUTH_URL` and `DDB_CHARACTER_BASE_URL` override the D&D Beyond endpoints; leave them unset
+in production. A bearer token D&D Beyond rejects with 401 is refreshed once before the call
+fails, and an unreachable auth service now answers 401 instead of leaving the request hanging.
