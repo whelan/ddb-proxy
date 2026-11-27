@@ -164,3 +164,16 @@ test("the auth service being down answers instead of hanging", async () => {
   assert.equal(r.json.success, false);
   assert.ok(Date.now() - started < 5000);
 });
+
+test("preflight from an https page allows a private-network call (Forge -> localhost)", async () => {
+  const r = await fetch(`${proxyUrl}/proxy/inventory`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://example.forge-vtt.com",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Private-Network": "true",
+    },
+  });
+  assert.equal(r.headers.get("access-control-allow-private-network"), "true");
+  assert.ok(r.headers.get("access-control-allow-origin"));
+});

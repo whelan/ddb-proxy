@@ -7,7 +7,8 @@
     "lint": "npx eslint ./",
     "test": "node --test test/*.test.js",
     "build": "webpack",
-    "mock:ddb": "node test/mock-ddb.js"
+    "mock:ddb": "node test/mock-ddb.js",
+    "dev": "node --watch index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

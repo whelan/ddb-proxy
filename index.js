@@ -18,6 +18,13 @@ const inventory = require("./inventory.js");
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Chrome's Private Network Access: an https page (The Forge) may call a proxy on
+// localhost only if the preflight says so.
+app.use((req, res, next) => {
+  if (req.headers["access-control-request-private-network"]) res.setHeader("Access-Control-Allow-Private-Network", "true");
+  next();
+});
+
 /**
  * A simple ping to tell if the proxy is running
  */
